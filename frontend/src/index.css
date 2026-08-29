@@ -916,6 +916,18 @@ tbody td {
     display: none; /* Hide subtitle on very small screens to save space */
   }
   
+  .navbar-right {
+    gap: 0.25rem !important; /* Reduce gap between icons on mobile */
+  }
+  .navbar-right .user-pill {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+  .navbar-right .user-pill span {
+    display: none; /* Hide name on mobile, only show avatar */
+  }
+  
   .card-body { padding: 1.25rem; }
   
   /* Tables */
