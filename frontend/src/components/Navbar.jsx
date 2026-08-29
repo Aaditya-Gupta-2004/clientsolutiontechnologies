@@ -1,13 +1,22 @@
 import { useAuth } from '../contexts/AuthContext';
-import { Bell } from 'lucide-react';
+import { useSidebar } from '../contexts/SidebarContext';
+import { Bell, Menu } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 export default function Navbar({ title, subtitle }) {
   const { user } = useAuth();
+  const { toggleSidebar } = useSidebar();
 
   return (
     <header className="navbar">
-      <div className="navbar-left">
+      <div className="navbar-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <button 
+          className="btn btn-icon btn-ghost mobile-menu-btn" 
+          onClick={toggleSidebar}
+          aria-label="Toggle Menu"
+        >
+          <Menu size={20} />
+        </button>
         <div>
           <div className="page-title">{title || 'Dashboard'}</div>
           {subtitle && <div className="page-breadcrumb">{subtitle}</div>}

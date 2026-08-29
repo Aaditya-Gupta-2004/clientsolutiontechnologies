@@ -4,6 +4,7 @@ import {
   Users, ShieldCheck, LogOut, Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import toast from 'react-hot-toast';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ThemeToggle';
@@ -41,6 +42,7 @@ const NAV = {
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const { isOpen, closeSidebar } = useSidebar();
   const navigate = useNavigate();
   const navItems = NAV[user?.role] || [];
 
@@ -51,30 +53,40 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo" style={{ padding: '1rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <BrandLogo size="md" />
-      </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div 
+          className="sidebar-backdrop"
+          onClick={closeSidebar}
+        />
+      )}
+      
+      <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+        {/* Logo */}
+        <div className="sidebar-logo" style={{ padding: '1rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <BrandLogo size="md" />
+        </div>
 
-      {/* Navigation */}
-      <nav className="sidebar-nav">
-        {navItems.map((item, i) =>
-          item.section ? (
-            <span key={i} className="nav-section-label">{item.label}</span>
-          ) : (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/superadmin' || item.to === '/admin' || item.to === '/dashboard'}
-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-            >
-              <item.icon size={18} className="nav-link-icon" />
-              {item.label}
-            </NavLink>
-          )
-        )}
-      </nav>
+        {/* Navigation */}
+        <nav className="sidebar-nav">
+          {navItems.map((item, i) =>
+            item.section ? (
+              <span key={i} className="nav-section-label">{item.label}</span>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/superadmin' || item.to === '/admin' || item.to === '/dashboard'}
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                onClick={closeSidebar}
+              >
+                <item.icon size={18} className="nav-link-icon" />
+                {item.label}
+              </NavLink>
+            )
+          )}
+        </nav>
 
       {/* User + Logout */}
       <div className="sidebar-footer">
@@ -99,5 +111,6 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

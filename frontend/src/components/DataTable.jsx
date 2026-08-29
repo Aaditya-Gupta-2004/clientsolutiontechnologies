@@ -27,7 +27,7 @@ export default function DataTable({ columns, data, loading, emptyText = 'No reco
   );
 
   return (
-    <div className="table-wrapper">
+    <div className="table-wrapper table-responsive">
       <table>
         <thead>
           <tr>

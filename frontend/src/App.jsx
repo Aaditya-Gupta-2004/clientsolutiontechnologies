@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { SidebarProvider } from './contexts/SidebarContext';
 import Sidebar from './components/Sidebar';
 
 import LoginPage from './pages/LoginPage';
@@ -57,62 +58,64 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#0f1629',
-              color: '#F0F4FF',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '12px',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-            },
-            success: { iconTheme: { primary: '#22C55E', secondary: '#0f1629' } },
-            error:   { iconTheme: { primary: '#EF4444', secondary: '#0f1629' } },
-          }}
-        />
-        <Routes>
-          {/* Public */}
-          <Route element={<PublicOnly />}>
-            <Route path="/login" element={<LoginPage />} />
-          </Route>
-
-          {/* Protected — all roles */}
-          <Route element={<RequireAuth />}>
-            <Route element={<AppLayout />}>
-              {/* Super Admin */}
-              <Route element={<RequireAuth allowedRoles={['superadmin']} />}>
-                <Route path="/superadmin" element={<SuperAdminDashboard />} />
-                <Route path="/audit" element={<AuditLogPage />} />
-              </Route>
-
-              {/* Admin */}
-              <Route element={<RequireAuth allowedRoles={['admin', 'superadmin']} />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-              </Route>
-
-              {/* Client */}
-              <Route element={<RequireAuth allowedRoles={['client']} />}>
-                <Route path="/dashboard" element={<ClientDashboard />} />
-              </Route>
-
-              {/* Shared (all authenticated) */}
-              <Route path="/documents" element={<DocumentsPage />} />
-              <Route path="/documents/:id" element={<DocumentViewer />} />
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/payments" element={<PaymentsPage />} />
-              <Route element={<RequireAuth allowedRoles={['admin', 'superadmin']} />}>
-                <Route path="/users" element={<UsersPage />} />
+        <SidebarProvider>
+          <BrowserRouter>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: '#0f1629',
+                color: '#F0F4FF',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              },
+              success: { iconTheme: { primary: '#22C55E', secondary: '#0f1629' } },
+              error:   { iconTheme: { primary: '#EF4444', secondary: '#0f1629' } },
+            }}
+          />
+          <Routes>
+            {/* Public */}
+            <Route element={<PublicOnly />}>
+              <Route path="/login" element={<LoginPage />} />
+            </Route>
+  
+            {/* Protected — all roles */}
+            <Route element={<RequireAuth />}>
+              <Route element={<AppLayout />}>
+                {/* Super Admin */}
+                <Route element={<RequireAuth allowedRoles={['superadmin']} />}>
+                  <Route path="/superadmin" element={<SuperAdminDashboard />} />
+                  <Route path="/audit" element={<AuditLogPage />} />
+                </Route>
+  
+                {/* Admin */}
+                <Route element={<RequireAuth allowedRoles={['admin', 'superadmin']} />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                </Route>
+  
+                {/* Client */}
+                <Route element={<RequireAuth allowedRoles={['client']} />}>
+                  <Route path="/dashboard" element={<ClientDashboard />} />
+                </Route>
+  
+                {/* Shared (all authenticated) */}
+                <Route path="/documents" element={<DocumentsPage />} />
+                <Route path="/documents/:id" element={<DocumentViewer />} />
+                <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/payments" element={<PaymentsPage />} />
+                <Route element={<RequireAuth allowedRoles={['admin', 'superadmin']} />}>
+                  <Route path="/users" element={<UsersPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
-
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+  
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </BrowserRouter>
+        </SidebarProvider>
+      </AuthProvider>
   </ThemeProvider>
   );
 }
