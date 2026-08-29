@@ -2,6 +2,7 @@ import os
 import uuid
 import base64
 from pathlib import Path
+from typing import Optional
 from fpdf import FPDF
 from PIL import Image, ImageFilter, ImageOps
 import io
