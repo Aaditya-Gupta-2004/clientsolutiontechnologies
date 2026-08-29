@@ -1,0 +1,41 @@
+# Node / Frontend
+node_modules/
+dist/
+build/
+.npm/
+
+# Python / Backend
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment Variables (CRITICAL)
+.env
+.env.local
+.env.*
+
+# Database and Storage
+project_portal.db
+backend/storage/documents/*
+backend/storage/signed/*
+backend/storage/assets/*
+!backend/storage/documents/.gitkeep
+!backend/storage/signed/.gitkeep
+!backend/storage/assets/.gitkeep
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
