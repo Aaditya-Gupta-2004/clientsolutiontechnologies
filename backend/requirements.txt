@@ -15,3 +15,5 @@ aiofiles
 httpx
 pytest
 pytest-asyncio
+email-validator
+pypdf
