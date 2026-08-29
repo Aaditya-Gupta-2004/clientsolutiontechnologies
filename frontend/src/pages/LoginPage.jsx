@@ -100,20 +100,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo hint */}
-          <div className="divider-text" style={{ marginTop: '1.5rem' }}>Default credentials</div>
-          <div style={{
-            background: 'rgba(79,142,247,0.06)',
-            border: '1px solid rgba(79,142,247,0.15)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '0.875rem',
-            fontSize: '0.78rem',
-            color: 'var(--text-secondary)',
-            marginTop: '0.75rem',
-          }}>
-            <strong style={{ color: 'var(--accent-blue)' }}>Super Admin</strong><br />
-            admin@projectportal.com / Admin@1234
-          </div>
         </div>
       </div>
     </div>
