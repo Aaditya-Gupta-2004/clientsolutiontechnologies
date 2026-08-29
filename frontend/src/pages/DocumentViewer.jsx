@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api, { getDocument, signDocument, downloadDocument, deleteDocument } from '../services/api';
+import api, { getDocument, signDocument, downloadDocument, deleteDocument, BASE_URL } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import SignaturePad from '../components/SignaturePad';
@@ -29,9 +29,9 @@ export default function DocumentViewer() {
       setPdfBlobUrl(url);
     } catch (err) {
       console.error('Failed to load PDF blob:', err);
-      const BASE = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
       const token = localStorage.getItem('token');
-      setPdfBlobUrl(`${BASE}/api/v1/documents/${id}/download?token=${token}&t=${Date.now()}`);
+      const isDocSigned = signedMode || doc?.status === 'signed';
+      setPdfBlobUrl(`${BASE_URL}/documents/${id}/download?token=${token}&t=${Date.now()}${isDocSigned ? '&signed=true' : ''}`);
     } finally {
       setPdfLoading(false);
     }
