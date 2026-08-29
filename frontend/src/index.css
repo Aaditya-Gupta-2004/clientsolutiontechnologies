@@ -911,6 +911,28 @@ tbody td {
   }
   .table-responsive .table { border: none; }
   
+  /* Page headers and filters */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filters-row .form-input,
+  .filters-row .form-select,
+  .filters-row .btn {
+    max-width: 100% !important;
+    width: 100%;
+  }
+  
   /* Modals */
   .modal-content {
     width: 95%;
