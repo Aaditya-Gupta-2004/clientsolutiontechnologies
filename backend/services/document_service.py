@@ -157,16 +157,38 @@ def overlay_signature_on_pdf(
 
         if is_seven_page_contract:
             # Point-based coordinates for 7-page SOLUSHAN contract layout (Page 6)
-            # Precisely centered inside the right-side dotted box:
             overlay_pdf = FPDF(unit="pt", format=[pw_target, ph_target])
             overlay_pdf.add_page()
-            overlay_pdf.image(str(sig_path), x=340, y=300, w=145)
+            
+            # Constrain Page 6 signature to a max box of 145x50
+            max_w_6, max_h_6 = 145, 50
+            final_w_6 = max_w_6
+            final_h_6 = final_w_6 * aspect
+            if final_h_6 > max_h_6:
+                final_h_6 = max_h_6
+                final_w_6 = max_h_6 / aspect
+            
+            off_x_6 = 340 + (max_w_6 - final_w_6) / 2
+            off_y_6 = 300 + (max_h_6 - final_h_6) / 2
+            overlay_pdf.image(str(sig_path), x=off_x_6, y=off_y_6, w=final_w_6, h=final_h_6)
 
             # Also stamp Page 7 (Schedule A)
             overlay_pdf_7 = FPDF(unit="pt", format=[pw_target, ph_target])
             overlay_pdf_7.add_page()
-            # Client signature line is at y=675 pt (FPDF top-down), x=405 pt on Page 7
-            overlay_pdf_7.image(str(sig_path), x=405, y=675, w=110)
+            
+            # Constrain Page 7 signature to a max box of 110x35
+            max_w_7, max_h_7 = 110, 35
+            final_w_7 = max_w_7
+            final_h_7 = final_w_7 * aspect
+            if final_h_7 > max_h_7:
+                final_h_7 = max_h_7
+                final_w_7 = max_h_7 / aspect
+                
+            off_x_7 = 405 + (max_w_7 - final_w_7) / 2
+            # Bottom align to sit nicely on the line
+            off_y_7 = 675 + (max_h_7 - final_h_7)
+            
+            overlay_pdf_7.image(str(sig_path), x=off_x_7, y=off_y_7, w=final_w_7, h=final_h_7)
             overlay_temp_path_7 = STORAGE / "signed" / f"overlay_p7_{sig_id}.pdf"
             overlay_pdf_7.output(str(overlay_temp_path_7))
         else:
