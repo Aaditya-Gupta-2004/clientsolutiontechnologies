@@ -927,6 +927,12 @@ tbody td {
   }
   .table-responsive .table { border: none; }
   
+  .table th, .table td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    white-space: nowrap; /* prevent text from squishing into vertical columns */
+  }
+  
   /* Page headers and filters */
   .page-header {
     flex-direction: column;
@@ -947,6 +953,10 @@ tbody td {
   .filters-row .btn {
     max-width: 100% !important;
     width: 100%;
+  }
+  
+  .form-input, .form-select, .form-textarea {
+    font-size: 1rem !important; /* Forces 16px to prevent iOS auto-zoom */
   }
   
   /* Modals */
