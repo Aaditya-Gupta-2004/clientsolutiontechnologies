@@ -25,6 +25,7 @@ class RazorpayOrderResponse(BaseModel):
     order_id: str
     amount: float
     currency: str
+    is_demo: bool = False
 
 class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str

@@ -131,6 +131,7 @@ def create_intent(
         order_id=order["order_id"],
         amount=order["amount"],
         currency=order["currency"],
+        is_demo=order.get("is_demo", False)
     )
 
 
