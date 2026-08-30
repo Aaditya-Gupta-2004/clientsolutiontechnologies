@@ -21,11 +21,15 @@ class PaymentUpdate(BaseModel):
     status: Optional[PaymentStatus] = None
 
 
-class PaymentIntentResponse(BaseModel):
-    client_secret: str
-    payment_intent_id: str
+class RazorpayOrderResponse(BaseModel):
+    order_id: str
     amount: float
     currency: str
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
 
 
 class PaymentResponse(BaseModel):

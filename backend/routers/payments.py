@@ -7,15 +7,13 @@ from models.user import User, UserRole
 from models.payment import Payment, PaymentStatus
 from schemas.payment import (
     PaymentCreate, PaymentUpdate,
-    PaymentIntentResponse, PaymentResponse, PaymentListResponse
+    RazorpayOrderResponse, VerifyPaymentRequest, PaymentResponse, PaymentListResponse
 )
 from services.auth_service import get_current_user, require_admin
-from services.stripe_service import (
-    create_payment_intent, retrieve_payment_intent,
-    construct_webhook_event, get_publishable_key
+from services.razorpay_service import (
+    create_order, verify_payment_signature, get_publishable_key
 )
 from services.audit_service import log_action, get_client_ip
-import stripe
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
@@ -39,9 +37,9 @@ def _pay_response(p: Payment) -> dict:
 
 
 @router.get("/config")
-def get_stripe_config():
-    """Return Stripe publishable key for frontend."""
-    return {"publishable_key": get_publishable_key()}
+def get_razorpay_config():
+    """Return Razorpay key id for frontend."""
+    return {"key_id": get_publishable_key()}
 
 
 @router.get("", response_model=PaymentListResponse)
@@ -103,13 +101,13 @@ def create_payment(
     return _pay_response(p)
 
 
-@router.post("/{payment_id}/create-intent", response_model=PaymentIntentResponse)
+@router.post("/{payment_id}/create-order", response_model=RazorpayOrderResponse)
 def create_intent(
     payment_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Create a Stripe PaymentIntent for a pending payment."""
+    """Create a Razorpay Order for a pending payment."""
     p = db.query(Payment).filter(Payment.id == payment_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -118,22 +116,56 @@ def create_intent(
     if p.status not in [PaymentStatus.pending, PaymentStatus.processing]:
         raise HTTPException(status_code=400, detail=f"Payment is already {p.status.value}")
 
-    intent = create_payment_intent(
-        amount_dollars=p.amount,
+    # Ensure currency is INR for Razorpay in India, but Razorpay supports others too
+    order = create_order(
+        amount=p.amount,
         currency=p.currency,
-        metadata={"payment_id": str(p.id), "client_id": str(p.client_id)},
+        receipt_id=f"rcpt_{p.id}",
+        notes={"payment_id": str(p.id), "client_id": str(p.client_id)}
     )
-    p.stripe_payment_intent_id = intent["payment_intent_id"]
-    p.stripe_client_secret = intent["client_secret"]
+    p.stripe_payment_intent_id = order["order_id"] # Reusing the column
     p.status = PaymentStatus.processing
     db.commit()
 
-    return PaymentIntentResponse(
-        client_secret=intent["client_secret"],
-        payment_intent_id=intent["payment_intent_id"],
-        amount=p.amount,
-        currency=p.currency,
+    return RazorpayOrderResponse(
+        order_id=order["order_id"],
+        amount=order["amount"],
+        currency=order["currency"],
     )
+
+
+@router.post("/{payment_id}/verify", response_model=PaymentResponse)
+def verify_payment(
+    payment_id: int,
+    data: VerifyPaymentRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Verify Razorpay payment signature and mark as paid."""
+    p = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    is_valid = verify_payment_signature(
+        data.razorpay_order_id, 
+        data.razorpay_payment_id, 
+        data.razorpay_signature
+    )
+    
+    if not is_valid:
+        raise HTTPException(status_code=400, detail="Invalid payment signature")
+        
+    if p.stripe_payment_intent_id != data.razorpay_order_id:
+        raise HTTPException(status_code=400, detail="Order ID mismatch")
+
+    p.status = PaymentStatus.paid
+    p.paid_at = datetime.now(timezone.utc)
+    p.stripe_client_secret = data.razorpay_payment_id # Store payment ID for reference
+    db.commit()
+    db.refresh(p)
+    log_action(db, "payment.paid", user=current_user, target_type="payment",
+               target_id=p.id, detail={"amount": p.amount, "razorpay_payment_id": data.razorpay_payment_id})
+    return _pay_response(p)
 
 
 @router.post("/{payment_id}/confirm-demo-payment", response_model=PaymentResponse)
@@ -154,44 +186,8 @@ def confirm_demo_payment(
     db.commit()
     db.refresh(p)
     log_action(db, "payment.paid", user=current_user, target_type="payment",
-               target_id=p.id, detail={"amount": p.amount, "mode": "card_test"})
+               target_id=p.id, detail={"amount": p.amount, "mode": "demo_test"})
     return _pay_response(p)
-
-
-
-@router.post("/webhook")
-async def stripe_webhook(
-    request: Request,
-    stripe_signature: Optional[str] = Header(None, alias="stripe-signature"),
-    db: Session = Depends(get_db),
-):
-    """Handle Stripe webhook events."""
-    payload = await request.body()
-    try:
-        event = construct_webhook_event(payload, stripe_signature)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Webhook error: {str(e)}")
-
-    if event["type"] == "payment_intent.succeeded":
-        pi = event["data"]["object"]
-        payment_id = int(pi.get("metadata", {}).get("payment_id", 0))
-        p = db.query(Payment).filter(Payment.id == payment_id).first()
-        if p:
-            p.status = PaymentStatus.paid
-            p.paid_at = datetime.now(timezone.utc)
-            db.commit()
-            log_action(db, "payment.paid", target_type="payment", target_id=p.id,
-                       detail={"stripe_id": pi["id"]})
-
-    elif event["type"] == "payment_intent.payment_failed":
-        pi = event["data"]["object"]
-        payment_id = int(pi.get("metadata", {}).get("payment_id", 0))
-        p = db.query(Payment).filter(Payment.id == payment_id).first()
-        if p:
-            p.status = PaymentStatus.failed
-            db.commit()
-
-    return {"status": "ok"}
 
 
 @router.put("/{payment_id}", response_model=PaymentResponse)

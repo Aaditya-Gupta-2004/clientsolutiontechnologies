@@ -9,9 +9,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
-    stripe_secret_key: str = "sk_test_placeholder"
-    stripe_publishable_key: str = "pk_test_placeholder"
-    stripe_webhook_secret: str = "whsec_placeholder"
+    razorpay_key_id: str = "rzp_test_placeholder"
+    razorpay_key_secret: str = "rzp_secret_placeholder"
 
     app_name: str = "Solution Technologies Project Portal"
     storage_path: str = "./storage"

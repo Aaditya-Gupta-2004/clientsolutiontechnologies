@@ -132,11 +132,14 @@ export const updatePayment = (id, data) =>
 export const deletePayment = (id) =>
   api.delete(`/payments/${id}`).then(r => r.data);
 
-export const createPaymentIntent = (id) =>
-  api.post(`/payments/${id}/create-intent`).then(r => r.data);
+export const createRazorpayOrder = (id) =>
+  api.post(`/payments/${id}/create-order`).then(r => r.data);
 
-export const getStripeConfig = () =>
+export const getRazorpayConfig = () =>
   api.get('/payments/config').then(r => r.data);
+
+export const verifyRazorpayPayment = (id, data) =>
+  api.post(`/payments/${id}/verify`, data).then(r => r.data);
 
 export const confirmDemoPayment = (id) =>
   api.post(`/payments/${id}/confirm-demo-payment`).then(r => r.data);

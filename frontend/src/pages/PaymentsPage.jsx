@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getPayments, createPayment, deletePayment, getUsers, getStripeConfig, downloadInvoice } from '../services/api';
+import { getPayments, createPayment, deletePayment, getUsers, getRazorpayConfig, createRazorpayOrder, verifyRazorpayPayment, confirmDemoPayment, downloadInvoice } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import StripeCheckout from '../components/StripeCheckout';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import { CreditCard, Plus, Trash2, DollarSign, FileText, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -20,7 +17,6 @@ export default function PaymentsPage() {
   const [createModal, setCreateModal] = useState(false);
   const [payModal, setPayModal] = useState(null);
   const [clients, setClients] = useState([]);
-  const [stripePromise, setStripePromise] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
 
   const [form, setForm] = useState({ title: '', description: '', amount: '', currency: 'usd', client_id: '', due_date: '' });
@@ -38,10 +34,15 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     if (isAdmin) getUsers({ role: 'client' }).then(d => setClients(d.users)).catch(() => {});
-    // Load Stripe
-    getStripeConfig()
-      .then(cfg => setStripePromise(loadStripe(cfg.publishable_key)))
-      .catch(() => {});
+    
+    // Load Razorpay Script
+    if (!document.getElementById('razorpay-checkout-js')) {
+      const script = document.createElement('script');
+      script.id = 'razorpay-checkout-js';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, [isAdmin]);
 
   const handleCreate = async (e) => {
@@ -75,6 +76,71 @@ export default function PaymentsPage() {
       toast.success('Deleted');
       load();
     } catch { toast.error('Failed'); }
+  };
+
+  const handlePayNow = async (payment) => {
+    try {
+      // 1. Get Razorpay Config
+      const { key_id } = await getRazorpayConfig();
+      
+      // 2. Create Order on backend
+      const order = await createRazorpayOrder(payment.id);
+      
+      if (order.is_demo) {
+         // Fallback for demo without Razorpay API keys
+         await confirmDemoPayment(payment.id);
+         toast.success("Demo Payment Successful!");
+         load();
+         return;
+      }
+      
+      // 3. Open Razorpay Checkout Modal
+      const options = {
+        key: key_id,
+        amount: order.amount, // amount from backend (already in subunit/paise in Razorpay backend response, but our backend returns order["amount"] which is float, wait, razorpay order amount is in subunit)
+        // Wait, our createRazorpayOrder returns the original float `amount`. We need to pass the float amount to razorpay checkout? No, razorpay options amount is in paise.
+        amount: Math.round(order.amount * 100),
+        currency: order.currency,
+        name: "Solution Technologies",
+        description: payment.title,
+        order_id: order.order_id,
+        handler: async function (response) {
+            try {
+                // 4. Verify Payment on backend
+                await verifyRazorpayPayment(payment.id, {
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature
+                });
+                toast.success("Payment Successful!");
+                load();
+            } catch (err) {
+                toast.error(err.response?.data?.detail || "Payment verification failed");
+            }
+        },
+        prefill: {
+            name: user?.name,
+            email: user?.email,
+        },
+        theme: {
+            color: "#1c64f2" // var(--accent-blue)
+        }
+      };
+      
+      if (!window.Razorpay) {
+          toast.error("Razorpay SDK failed to load. Are you offline?");
+          return;
+      }
+      
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+         toast.error("Payment failed: " + response.error.description);
+      });
+      rzp.open();
+      
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Could not initiate payment");
+    }
   };
 
   const formatAmount = (amount, currency = 'inr') => {
@@ -131,7 +197,7 @@ export default function PaymentsPage() {
           {row.status === 'pending' && (
             <button
               className="btn btn-sm btn-primary"
-              onClick={() => setPayModal(row)}
+              onClick={() => handlePayNow(row)}
             >
               <CreditCard size={14} /> Pay Now
             </button>
@@ -254,32 +320,7 @@ export default function PaymentsPage() {
         </form>
       </Modal>
 
-      {/* Pay Modal — Credit / Debit Card checkout */}
-      <Modal open={!!payModal} onClose={() => setPayModal(null)} title="Complete Payment" size="lg">
-        <div className="modal-body">
-          {payModal && (
-            stripePromise ? (
-              <Elements stripe={stripePromise} options={{ appearance: { theme: 'night' } }}>
-                <StripeCheckout
-                  payment={payModal}
-                  onSuccess={() => {
-                    setPayModal(null);
-                    setTimeout(load, 500);
-                  }}
-                />
-              </Elements>
-            ) : (
-              <StripeCheckout
-                payment={payModal}
-                onSuccess={() => {
-                  setPayModal(null);
-                  setTimeout(load, 500);
-                }}
-              />
-            )
-          )}
-        </div>
-      </Modal>
+      {/* No Pay Modal needed - Razorpay uses its own overlay */}
     </>
   );
 }

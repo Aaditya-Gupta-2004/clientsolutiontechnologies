@@ -28,4 +28,4 @@ from .user import UserCreate, UserUpdate, UserResponse, UserListResponse
 from .auth import LoginRequest, TokenResponse, PasswordChange
 from .document import DocumentCreate, DocumentUpdate, DocumentSend, DocumentSign, DocumentResponse, DocumentListResponse
 from .project import ProjectCreate, ProjectUpdate, ProjectPhaseUpdate, ProjectResponse, ProjectListResponse, PhaseItem
-from .payment import PaymentCreate, PaymentUpdate, PaymentIntentResponse, PaymentResponse, PaymentListResponse
+from .payment import PaymentCreate, PaymentUpdate, RazorpayOrderResponse, VerifyPaymentRequest, PaymentResponse, PaymentListResponse
