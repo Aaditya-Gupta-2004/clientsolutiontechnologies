@@ -194,7 +194,7 @@ export default function PaymentsPage() {
           >
             <FileText size={13} /> Invoice
           </button>
-          {row.status === 'pending' && (
+          {['pending', 'processing', 'failed'].includes(row.status) && (
             <button
               className="btn btn-sm btn-primary"
               onClick={() => handlePayNow(row)}
