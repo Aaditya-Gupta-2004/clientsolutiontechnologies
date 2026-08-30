@@ -100,7 +100,7 @@ export default function PaymentsPage() {
         amount: order.amount, // amount from backend (already in subunit/paise in Razorpay backend response, but our backend returns order["amount"] which is float, wait, razorpay order amount is in subunit)
         // Wait, our createRazorpayOrder returns the original float `amount`. We need to pass the float amount to razorpay checkout? No, razorpay options amount is in paise.
         amount: Math.round(order.amount * 100),
-        currency: order.currency,
+        currency: order.currency.toUpperCase(),
         name: "Solution Technologies",
         description: payment.title,
         order_id: order.order_id,
